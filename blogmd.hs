@@ -66,10 +66,13 @@ navHtml url (PostFile s) = mconcat [ "<li><a href=\""
     nomd :: String -> String 
     nomd str = splitOn "." str !! 0
 
--- TODO  Use map instead of create a list handle function
+
 navHtmlList :: String -> [PostEntry] -> String
 navHtmlList _ [] = ""
-navHtmlList url (x:xs) = "\n" ++ navHtml url x ++ navHtmlList url xs
+navHtmlList url postEntries = concatMap wrapEntry postEntries
+  where
+    wrapEntry postEntry = mconcat [ "\n"
+                                  , navHtml url postEntry ]
 
 getValidContents :: FilePath -> IO [FilePath]
 getValidContents pathName =
