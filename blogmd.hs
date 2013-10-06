@@ -64,8 +64,11 @@ navHtml url (PostFile s) = mconcat [ "<li><a href=\""
                                    , "</a></li>" ]
   where 
     nomd :: String -> String 
-    nomd str = splitOn "." str !! 0
-
+    nomd = head' . splitOn "."
+    
+    head' :: [String] -> String
+    head' [] = ""
+    head' = head 
 
 navHtmlList :: String -> [PostEntry] -> String
 navHtmlList _ [] = ""
