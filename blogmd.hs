@@ -52,16 +52,16 @@ data PostEntry = PostFile FilePath | PostDir FilePath [PostEntry]
 
 -- TODO Messing html here, not good.
 navHtml :: String -> PostEntry -> String
-navHtml url (PostDir s childs) = 
-         "<li role=\"presentation\" class=\"divider\"></li>"
-        ++ "<li role=\"presentation\" class=\"dropdown-header\">" 
-        ++ s 
-        ++ "</li>" 
-        ++ navHtmlList (url </> s) childs
-navHtml url (PostFile s) =
-        "<li><a href=\"" ++ (url </> (nomd s) ) ++ "\">"
-        ++ nomd s
-        ++ "</a></li>"
+navHtml url (PostDir s childs) = mconcat [ "<li role=\"presentation\" class=\"divider\"></li>"
+                                         , "<li role=\"presentation\" class=\"dropdown-header\">"
+                                         , s
+                                         , "</li>"
+                                         , navHtmlList (url </> s) childs ]
+navHtml url (PostFile s) = mconcat [ "<li><a href=\""
+                                   , url </> (nomd s)
+                                   , "\">"
+                                   , nomd s
+                                   , "</a></li>" ]
   where 
     nomd :: String -> String 
     nomd str = splitOn "." str !! 0
@@ -115,10 +115,9 @@ initApp cdir posts templates  = do
     tplName :: FilePath -> FilePath
     tplName s = splitOn "." s !! 0 ++ ".tpl"
     mdToHtml :: String -> String
-    mdToHtml md =  
-           "<apply template=\"layout\">"
-        ++ (writeHtmlString def $ readMarkdown def md)
-        ++ "</apply>"
+    mdToHtml md = mconcat [ "<apply template=\"layout\">"
+                          , writeHtmlString def $ readMarkdown def md
+                          , "</apply>" ]
     -- TODO Nonlazy IO
     genPostTpl :: FilePath -> PostEntry -> IO ()
     genPostTpl dpath (PostDir dname childs) = do
