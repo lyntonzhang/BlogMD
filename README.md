@@ -31,7 +31,7 @@ A blog program generating navigator and pages according to markdown posts.
 
 ### Example
 
-* [My Blog](www.lyntonzhang.com)
+* [My Blog](http://www.lyntonzhang.com)
 
 ---
 
