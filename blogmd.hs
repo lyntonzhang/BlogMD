@@ -217,6 +217,5 @@ main :: IO ()
 main = do
     cdir <- getCurrentDirectory 
     app <- initApp cdir "posts" "template"
-    -- quickHttpServe $ site app
     httpServe (setPort 8017 mempty) $ site app
     
