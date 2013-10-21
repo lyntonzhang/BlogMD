@@ -1,0 +1,8 @@
+blogmd
+*.o
+*.hi
+*.swp
+posts
+template/posts
+static/images
+

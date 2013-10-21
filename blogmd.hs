@@ -48,34 +48,43 @@ import Data.List.Split (splitOn)
                       ---- PostEntry ----
                       -------------------
 
-data PostEntry = PostFile FilePath | PostDir FilePath [PostEntry] 
+data PostEntry = PostFile FilePath T.Text | PostDir FilePath [PostEntry] 
 
--- TODO Messing html here, not good.
-navHtml :: String -> PostEntry -> String
-navHtml url (PostDir s childs) = mconcat [ "<li role=\"presentation\" class=\"divider\"></li>"
-                                         , "<li role=\"presentation\" class=\"dropdown-header\">"
-                                         , s
-                                         , "</li>"
-                                         , navHtmlList (url </> s) childs ]
-navHtml url (PostFile s) = mconcat [ "<li><a href=\""
-                                   , url </> (nomd s)
-                                   , "\">"
-                                   , nomd s
-                                   , "</a></li>" ]
-  where 
+archiveHtml :: String -> PostEntry -> T.Text
+archiveHtml category (PostDir dirname childs) = 
+    mconcat [ "<li>"
+            , T.pack dirname
+            , "</li>"
+            , archiveHtmlList (category </> dirname) childs
+            ]
+archiveHtml url (PostFile tplname title) =
+    mconcat [ "<li><a href=\""
+            , T.pack $ url </> nomd tplname
+            , "\">"
+            , title
+            , "</a></li>"
+            ]
+  where
+    head' :: [String] -> String
+    head' [] = ""   
+    head' s = head s
     nomd :: String -> String 
     nomd = head' . splitOn "."
-    
-    head' :: [String] -> String
-    head' [] = ""
-    head' = head 
 
-navHtmlList :: String -> [PostEntry] -> String
-navHtmlList _ [] = ""
-navHtmlList url postEntries = concatMap wrapEntry postEntries
+archiveHtmlList :: String -> [PostEntry] -> T.Text
+archiveHtmlList _ [] = ""
+{-
+archiveHtmlList url postEntries = concatMap wrapEntry postEntries
   where
     wrapEntry postEntry = mconcat [ "\n"
-                                  , navHtml url postEntry ]
+                                  , archiveHtml url postEntry
+                                  ]
+-}
+archiveHtmlList url (x:xs) =
+        T.concat $ ["\n"
+                   , archiveHtml url x
+                   , archiveHtmlList url xs
+                   ]
 
 getValidContents :: FilePath -> IO [FilePath]
 getValidContents pathName =
@@ -88,11 +97,22 @@ genPostDir cdir dirName = do
         t <- isSubDir pathName
         case t of
              True -> genPostDir (cdir </> dirName) pathName
-             False -> return $ PostFile pathName
+             False -> do
+                 title <- postTitle $ cdir </> dirName </> pathName 
+                 return $ PostFile pathName title
     return $ PostDir dirName childs
   where
     isSubDir :: FilePath -> IO Bool
     isSubDir fpath = doesDirectoryExist $ cdir </> dirName </> fpath
+    postTitle :: FilePath -> IO T.Text
+    postTitle fpath = do 
+            print fpath
+            md <- PU8.readFile fpath
+            let Pandoc _ bs = readMarkdown def md
+                Header _ _ inlines = bs !! 0
+                Str s = inlines !! 0
+            putStrLn s
+            return $ T.pack s 
 
  ----------------------------------------------------------------------
                       ---------------------------
@@ -116,7 +136,7 @@ initApp cdir posts templates  = do
     return $ App h p 
   where
     splices :: Splices (C.Splice Handler)
-    splices = 
+    splices = do
         "postNav" ## navSplice
     tplName :: FilePath -> FilePath
     tplName s = splitOn "." s !! 0 ++ ".tpl"
@@ -130,7 +150,7 @@ initApp cdir posts templates  = do
         createDirectoryIfMissing False 
             $ cdir </> templates </> dpath </> dname
         mapM_ (genPostTpl $ dpath </> dname) childs
-    genPostTpl dpath (PostFile fname) = do
+    genPostTpl dpath (PostFile fname ftitle) = do
         md <- PU8.readFile $ cdir </> dpath </> fname
         PU8.writeFile (cdir </> templates </> dpath </> (tplName fname))
             $ mdToHtml md
@@ -160,7 +180,8 @@ navSplice :: C.Splice Handler
 navSplice = return $ C.yieldRuntimeText $ do
     app <- lift ask
     case pe app of
-        PostDir s childs -> return $ T.pack $ navHtmlList "/posts" childs
+        PostDir s childs -> 
+             return $ archiveHtmlList "/posts" childs
         _ -> return $ T.pack $ show "error"
 
 ----------------------------------------------------------------------
@@ -217,6 +238,5 @@ main :: IO ()
 main = do
     cdir <- getCurrentDirectory 
     app <- initApp cdir "posts" "template"
-    -- quickHttpServe $ site app
     httpServe (setPort 8017 mempty) $ site app
     
