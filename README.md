@@ -40,6 +40,8 @@ A blog program generating navigator and pages according to markdown posts.
 1. Lens
 2. User Authentication
 3. Unicode for FilePath of PostEntry
+    * Done. 
+    * But be careful, now every markdown document must start with a level 1 head, like `#Title`, and title would would show on the navigator or archive list.
 4. Recursive postNav
 5. Discussion and message
 6. Command arg to choose posts and templates
