@@ -108,6 +108,7 @@ genPostDir cdir dirName = do
     postTitle fpath = do 
             print fpath
             md <- PU8.readFile fpath
+            -- TODO Exception, not every markdown doc start with head 1
             let Pandoc _ bs = readMarkdown def md
                 Header _ _ inlines = bs !! 0
                 Str s = inlines !! 0
